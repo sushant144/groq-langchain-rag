@@ -7,3 +7,4 @@ faiss-cpu
 ollama
 python-dotenv
 beautifulsoup4
+langsmith
