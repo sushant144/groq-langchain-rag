@@ -4,7 +4,7 @@ langchain-groq
 langchain-community
 langchain-core
 faiss-cpu
-ollama
 python-dotenv
 beautifulsoup4
+lxml
 langsmith
