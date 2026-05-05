@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 groq_api_key = os.environ["GROQ_API_KEY"]
+groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3-32b")
 
 os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2", "true")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "groq-langchain-rag")
@@ -25,7 +26,6 @@ if os.getenv("LANGCHAIN_API_KEY"):
 
 FAISS_INDEX_PATH = "faiss_index"
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
-GROQ_MODEL = "qwen-qwq-32b"
 RELEVANCE_THRESHOLD = 0.3
 
 
@@ -66,15 +66,15 @@ def vector_embeddings():
 
 st.title("LangChain Groq")
 
-model_ok, available_models = verify_groq_model(GROQ_MODEL)
+model_ok, available_models = verify_groq_model(groq_model)
 if not model_ok:
     st.error(
-        f"Model '{GROQ_MODEL}' is not available on your Groq account. "
+        f"Model '{groq_model}' is not available on your Groq account. "
         f"Available models: {', '.join(sorted(available_models))}"
     )
     st.stop()
 
-llm = ChatGroq(groq_api_key=groq_api_key, model=GROQ_MODEL)
+llm = ChatGroq(groq_api_key=groq_api_key, model=groq_model)
 
 prompt = ChatPromptTemplate.from_template(
     """
