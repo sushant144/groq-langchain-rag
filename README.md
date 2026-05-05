@@ -22,7 +22,7 @@ A lightning-fast Retrieval Augmented Generation (RAG) application built with Lan
 
 ## LangChain Package Imports (v0.3+)
 
-All imports use the latest LangChain split-package structure:
+All imports use the latest LangChain split-package structure. The legacy `langchain.chains` namespace is **not used** — the RAG pipeline is composed using LCEL (LangChain Expression Language) runnables from `langchain-core`.
 
 | Class / Function | Package |
 |---|---|
@@ -31,9 +31,9 @@ All imports use the latest LangChain split-package structure:
 | `HuggingFaceEmbeddings` | `langchain-huggingface` |
 | `FAISS` | `langchain-community` |
 | `RecursiveCharacterTextSplitter` | `langchain-text-splitters` |
-| `create_stuff_documents_chain` | `langchain` |
 | `ChatPromptTemplate` | `langchain-core` |
-| `create_retrieval_chain` | `langchain` |
+| `RunnablePassthrough` | `langchain-core` |
+| `StrOutputParser` | `langchain-core` |
 
 ## Setup
 
