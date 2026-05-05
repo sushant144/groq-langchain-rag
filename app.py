@@ -10,6 +10,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from groq import Groq
 
 from dotenv import load_dotenv
 
@@ -17,9 +18,6 @@ load_dotenv()
 
 groq_api_key = os.environ["GROQ_API_KEY"]
 groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3-32b")
-llm = ChatGroq(groq_api_key=groq_api_key, model=groq_model)
-
-
 
 os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2", "true")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "groq-langchain-rag")
@@ -28,6 +26,15 @@ if os.getenv("LANGCHAIN_API_KEY"):
 
 FAISS_INDEX_PATH = "faiss_index"
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+RELEVANCE_THRESHOLD = 0.3
+
+
+@st.cache_data(show_spinner=False)
+def verify_groq_model(model_id: str) -> tuple[bool, list[str]]:
+    """Check the model exists in the user's Groq account. Returns (exists, available_ids)."""
+    client = Groq(api_key=groq_api_key)
+    available = [m.id for m in client.models.list().data]
+    return model_id in available, available
 
 
 def vector_embeddings():
@@ -59,6 +66,15 @@ def vector_embeddings():
 
 st.title("LangChain Groq")
 
+model_ok, available_models = verify_groq_model(groq_model)
+if not model_ok:
+    st.error(
+        f"Model '{groq_model}' is not available on your Groq account. "
+        f"Available models: {', '.join(sorted(available_models))}"
+    )
+    st.stop()
+
+llm = ChatGroq(groq_api_key=groq_api_key, model=groq_model)
 
 prompt = ChatPromptTemplate.from_template(
     """
@@ -93,28 +109,42 @@ if user_input:
     if not st.session_state.embeddings_done:
         st.warning("Please create document embeddings first by clicking the button above.")
     else:
-        retriever = st.session_state.vectors.as_retriever()
-
-        rag_chain = RunnablePassthrough.assign(
-            context=lambda x: retriever.invoke(x["input"])
-        ).assign(
-            answer=(
-                lambda x: {"context": format_docs(x["context"]), "input": x["input"]}
-            )
-            | prompt
-            | llm
-            | StrOutputParser()
+        scored_docs = st.session_state.vectors.similarity_search_with_relevance_scores(
+            user_input, k=4
         )
+        relevant_docs = [doc for doc, score in scored_docs if score >= RELEVANCE_THRESHOLD]
+        top_score = max((score for _, score in scored_docs), default=0.0)
 
-        start = time.process_time()
-        response = rag_chain.invoke({"input": user_input})
-        end = time.process_time()
+        if not relevant_docs:
+            st.warning(
+                f"This question doesn't appear to be covered by the indexed documents "
+                f"(top relevance score: {top_score:.2f}, threshold: {RELEVANCE_THRESHOLD}). "
+                f"Try rephrasing or ask about LangSmith / LangChain documentation topics."
+            )
+        else:
+            rag_chain = (
+                RunnablePassthrough.assign(context=lambda x: relevant_docs)
+                .assign(
+                    answer=(
+                        lambda x: {"context": format_docs(x["context"]), "input": x["input"]}
+                    )
+                    | prompt
+                    | llm
+                    | StrOutputParser()
+                )
+            )
 
-        time_taken = end - start
-        st.write("Time taken to get the response: ", round(time_taken, 4), "seconds")
-        st.write(response["answer"])
+            start = time.process_time()
+            response = rag_chain.invoke({"input": user_input})
+            end = time.process_time()
 
-        with st.expander("Document Similarity Search"):
-            for doc in response.get("context", []):
-                st.write(doc.page_content)
-                st.write("---")
+            time_taken = end - start
+            st.write("Time taken to get the response: ", round(time_taken, 4), "seconds")
+            st.write(f"Top relevance score: {top_score:.2f}")
+            st.write(response["answer"])
+
+            with st.expander("Document Similarity Search"):
+                for doc, score in scored_docs:
+                    st.write(f"**Score: {score:.3f}**")
+                    st.write(doc.page_content)
+                    st.write("---")
