@@ -7,9 +7,9 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import create_retrieval_chain
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 from dotenv import load_dotenv
 
@@ -82,16 +82,29 @@ else:
     st.button("Document Embeddings", disabled=True, key="embed_done_button")
     st.write("Document embeddings already created. You can ask questions now.")
 
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
 if user_input:
     if not st.session_state.embeddings_done:
         st.warning("Please create document embeddings first by clicking the button above.")
     else:
-        document_chain = create_stuff_documents_chain(llm, prompt)
         retriever = st.session_state.vectors.as_retriever()
-        retriever_chain = create_retrieval_chain(retriever, document_chain)
+
+        rag_chain = RunnablePassthrough.assign(
+            context=lambda x: retriever.invoke(x["input"])
+        ).assign(
+            answer=(
+                lambda x: {"context": format_docs(x["context"]), "input": x["input"]}
+            )
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
 
         start = time.process_time()
-        response = retriever_chain.invoke({"input": user_input})
+        response = rag_chain.invoke({"input": user_input})
         end = time.process_time()
 
         time_taken = end - start
