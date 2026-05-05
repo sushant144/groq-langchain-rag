@@ -16,6 +16,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 groq_api_key = os.environ["GROQ_API_KEY"]
+groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3-32b")
+llm = ChatGroq(groq_api_key=groq_api_key, model=groq_model)
+
+
 
 os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2", "true")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "groq-langchain-rag")
@@ -55,7 +59,6 @@ def vector_embeddings():
 
 st.title("LangChain Groq")
 
-llm = ChatGroq(groq_api_key=groq_api_key, model="qwen-qwq-32b")
 
 prompt = ChatPromptTemplate.from_template(
     """
