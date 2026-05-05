@@ -1,6 +1,7 @@
 streamlit
 langchain-core
 langchain-groq
+groq
 langchain-community
 langchain-huggingface
 langchain-text-splitters

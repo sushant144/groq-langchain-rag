@@ -87,6 +87,16 @@ streamlit run app.py
 
 > **Note:** If you previously ran the app with Ollama embeddings, delete the `faiss_index/` directory before running again — the embedding dimensions are different and will cause a mismatch error.
 
+## Reliability Safeguards
+
+The app has two guards against silent failures:
+
+1. **Model verification at startup** — calls `Groq.models.list()` and confirms the configured model (`qwen-qwq-32b`) is available on your account. If not, the app shows an error listing every model you can use and halts before any query.
+
+2. **Out-of-scope question detection** — for every question, the app runs `similarity_search_with_relevance_scores` and checks the top score against `RELEVANCE_THRESHOLD` (default `0.3`). If no chunk passes the threshold, the LLM is **not called** — the user sees a "this question isn't covered by the indexed documents" message instead of a hallucinated answer. The top relevance score is also displayed alongside each successful answer.
+
+   Tune `RELEVANCE_THRESHOLD` in `app.py` to be stricter (higher) or more permissive (lower).
+
 ## Observability with LangSmith
 
 All RAG chain runs are automatically traced in LangSmith when `LANGCHAIN_TRACING_V2=true`. Visit your [LangSmith dashboard](https://smith.langchain.com) and open the `groq-langchain-rag` project to inspect:
