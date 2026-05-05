@@ -4,9 +4,9 @@ import time
 
 from langchain_groq import ChatGroq
 from langchain_community.document_loaders import WebBaseLoader
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains import create_retrieval_chain
@@ -21,12 +21,14 @@ os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2", "true")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "groq-langchain-rag")
 if os.getenv("LANGCHAIN_API_KEY"):
     os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+
 FAISS_INDEX_PATH = "faiss_index"
+EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
 
 def vector_embeddings():
     if os.path.exists(FAISS_INDEX_PATH):
-        st.session_state.embeddings = OllamaEmbeddings()
+        st.session_state.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         st.session_state.vectors = FAISS.load_local(
             FAISS_INDEX_PATH,
             st.session_state.embeddings,
@@ -34,7 +36,7 @@ def vector_embeddings():
         )
         st.write("FAISS index loaded from disk.")
     else:
-        st.session_state.embeddings = OllamaEmbeddings()
+        st.session_state.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         st.session_state.loader = WebBaseLoader("https://docs.smith.langchain.com/")
         st.session_state.docs = st.session_state.loader.load()
 
@@ -53,7 +55,7 @@ def vector_embeddings():
 
 st.title("LangChain Groq")
 
-llm = ChatGroq(groq_api_key=groq_api_key, model="gemma2-9b-it")
+llm = ChatGroq(groq_api_key=groq_api_key, model="qwen-qwq-32b")
 
 prompt = ChatPromptTemplate.from_template(
     """
