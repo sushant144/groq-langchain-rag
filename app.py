@@ -48,7 +48,7 @@ def vector_embeddings():
         st.write("FAISS index loaded from disk.")
     else:
         st.session_state.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        st.session_state.loader = WebBaseLoader("https://docs.smith.langchain.com/")
+        st.session_state.loader = WebBaseLoader("https://docs.langchain.com/")
         st.session_state.docs = st.session_state.loader.load()
 
         st.session_state.text_splitter = RecursiveCharacterTextSplitter(
