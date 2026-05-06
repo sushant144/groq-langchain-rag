@@ -15,7 +15,7 @@ A lightning-fast Retrieval Augmented Generation (RAG) application built with Lan
 
 ## How It Works
 
-1. **Embed** — Loads docs from `https://docs.smith.langchain.com/`, splits into chunks, and builds a FAISS vector index (persisted to disk). Embeddings run locally via HuggingFace `sentence-transformers` — no external API needed.
+1. **Embed** — Loads docs from `https://docs.langchain.com/`, splits into chunks, and builds a FAISS vector index (persisted to disk). Embeddings run locally via HuggingFace `sentence-transformers` — no external API needed.
 2. **Retrieve** — On each query, finds the most semantically relevant chunks via FAISS similarity search
 3. **Generate** — Passes retrieved context + question to Groq (`qwen-qwq-32b`) to produce a grounded answer
 4. **Observe** — Every chain run is traced automatically in LangSmith
